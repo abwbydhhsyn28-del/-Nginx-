@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e
+# 1. User & Group Management
+sudo groupadd iot_hub_admins
+sudo useradd -m iot_admin_user
+sudo usermod -aG iot_hub_admins iot_admin_user
+# 2. Directory & Permissions Setup
+sudo mkdir -p /srv/iot_hub   
+sudo chown iot_admin_user:iot_hub_admins /srv/iot_hub
+sudo chmod 775 /srv/iot_hub
+
+# 3. Software Installation
+sudo apt update
+sudo apt install nginx -y
+
+# 4. Firewall Configuration
+sudo ufw default deny incoming
+sudo ufw allow ssh
+sudo ufw allow http
+sudo ufw enable
+
+# 5. Content Deployment & Nginx Configuration
+sudo touch /srv/iot_hub/index.html 
+echo '<h1>IoT Hub Dashboard - System Normal</h1>' | sudo tee /srv/iot_hub/index.html   
+# Configure Nginx to serve the new directory
+sudo sed -i 's|root /var/www/html;|root /srv/iot_hub;|g' /etc/nginx/sites-available/default
+
+# 6. Service Management
+sudo systemctl enable nginx
+sudo systemctl restart nginx
+
+# 7. Final Verification
+if pgrep nginx; then
+    echo -e "\e[32mSUCCESS: IoT Hub deployment completed successfully.\e[0m"
+else
+    echo -e "\e[31mERROR: IoT Hub deployment failed.\e[0m"
+fi
